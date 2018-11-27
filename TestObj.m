@@ -78,7 +78,7 @@ classdef TestObj < handle
            
            %% Initialize map parameters
            this.channel_width = map.channel_width;              % Def channel width
-           bw = imbinarize(this.fig.cdata(:,:,1),0.9);          % RGB --> binary image
+           bw = imbinarize(this.fig.cdata(:,:,1),0.8);          % RGB --> binary image
            this.BW = bw;                                       % Resize the image for smooth path
            this.scale = map.scale;
            this.goal = map.goal_loc;                            % Goal location
