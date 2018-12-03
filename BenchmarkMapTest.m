@@ -28,7 +28,7 @@ alg = 6;   % 1 for Benchmark heuristics
           % 5 for Divide-and-conquer V21
           % 6 for Divide-and-conquer V11
 
-bolus_region = 1; %          
+bolus_region = 3; %          
           
 % Functions
 funct = 1;
