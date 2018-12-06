@@ -12,7 +12,7 @@ clc
 rng(18)
 
 % Def number of robots
-NumRob = 500; 
+NumRob = 1000; 
 
 % Animation ON/OFF switch
 animation_switch = 1;
@@ -21,17 +21,17 @@ animation_switch = 1;
 proc_disp = 0;
 
 % Choose an Algorithm
-alg = 6;   % 1 for Benchmark heuristics
+alg = 2;   % 1 for Benchmark heuristics
           % 2 for Divide-and-conquer standard
           % 3 for Divide-and-conquer V2
           % 4 for Divide-and-conquer V1
           % 5 for Divide-and-conquer V21
           % 6 for Divide-and-conquer V11
 
-bolus_region = 3; %          
+bolus_region = 30; %          
           
 % Functions
-funct = 1;
+funct = 2;
 %1: map processing only
 %2: Global control
 %3: Map evaluation (under construction)

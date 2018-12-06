@@ -928,9 +928,11 @@ classdef TestObj < handle
             disp(' ')
             disp(datetime('now'))
             fprintf('Total control steps = %d\n',nstep);
-            
-            temp = RegionDist(:,1)/this.NumRob>8/100;
-            fprintf('Aggregation rate = %f',100*sum(RegionDist(temp,1))/this.NumRob);
+            try 
+                temp = RegionDist(:,1)/this.NumRob>8/100;
+                fprintf('Aggregation rate = %f',100*sum(RegionDist(temp,1))/this.NumRob);
+            catch exception
+            end
             
             
 % %             this.Expt(1,this.col0) =this.goal(1);
