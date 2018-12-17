@@ -1,8 +1,0 @@
-mazeData = int(obj.BW);
-costMap = mazeData;
-goal = [393, 137];
-BSF_Frontier = [];
-
-
-
-
