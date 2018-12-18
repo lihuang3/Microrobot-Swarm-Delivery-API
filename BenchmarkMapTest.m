@@ -9,7 +9,7 @@ clear;
 close all;
 clc
 
-rng(18)
+% rng(18)
 
 % Def number of robots
 NumRob = 128; 
@@ -28,7 +28,8 @@ alg = 2;   % 1 for Benchmark heuristics
           % 5 for Divide-and-conquer V21
           % 6 for Divide-and-conquer V11
 
-bolus_region = 39; %          
+% If bolus_region == 0, use uniform distribution          
+bolus_region = 0; %          
           
 % Functions
 funct = 2;

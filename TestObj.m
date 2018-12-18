@@ -156,7 +156,7 @@ classdef TestObj < handle
                     disp('Human control mode...')
                     HumanControl(this);
            end
-          
+          disp('Completed!')
 
 
 % %            EdPts0tmp = this.EdPts0;
@@ -825,43 +825,46 @@ classdef TestObj < handle
        function RobotInit(this)
             % Distribute robots in freespace
             this.loc = zeros(this.NumRob,2);
+                      
             %% Uniformly Distribution
-            this.loc(:,1:2) = this.freespace(randi((length(this.freespace)),this.NumRob,1),1:2);
+            if this.bolus_region==0
+                this.loc(:,1:2) = this.freespace(randi((length(this.freespace)),this.NumRob,1),1:2);
             
             %% Locally Distribution
-%             % Select a random region as the first region
-%             RegID = randi(round(length(this.RegionID)*0.5),1);
-%             frtr = RegID;
-%             % (this.freespace(:,3) --> region ID information)
-%             while(numel(RegID)<this.bolus_region)
-%                 frtr_tmp = [];
-%                 for ii = 1:this.ConnMat(this.RegionID(frtr(1)),1)
-%                     temp = find(this.Path(:,1)==this.ConnMat(this.RegionID(frtr(1)),2*ii) & this.Path(:,2)==this.ConnMat(this.RegionID(frtr(1)),2*ii+1));
-%                     RegID = [RegID,this.Path(temp,6)];
-%                     frtr_tmp = [frtr_tmp,this.Path(temp,6)];
-%                 end
-%                 temp = find(this.Path(:,5)==1 & this.Path(:,6)==frtr(1));
-%                 while this.Path(temp,6)==frtr(1)
-%                     temp = this.Path(temp,3);
-%                 end
-%                 frtr(1) = [];
-%                 frtr = [frtr,this.Path(temp,6),unique(frtr_tmp)];
-%                 RegID = unique([RegID,this.Path(temp,6)]);
-% 
-%             end
-% 
-%             RegID = unique(RegID);
-%             RegPts = [];
-%             for ii = 1:length(RegID)
-%                 temp = this.freespace(:,3)==RegID(ii);                    % Find all waypoints in the local region    
-%             
-%                 RegPts = [RegPts;this.freespace(temp,:)];                        % Extract the waypoints information in the first region 
-%                        
-%             end
-%            % Distribute 100 robots to this region
-%             
-%             this.loc(:,1:2) = RegPts( randi(length(RegPts),this.NumRob,1),1:2); 
-                        
+            elseif this.bolus_region>0
+                % Select a random region as the first region
+                RegID = randi(round(length(this.RegionID)*0.5),1);
+                frtr = RegID;
+                % (this.freespace(:,3) --> region ID information)
+                while(numel(RegID)<this.bolus_region)
+                    frtr_tmp = [];
+                    for ii = 1:this.ConnMat(this.RegionID(frtr(1)),1)
+                        temp = find(this.Path(:,1)==this.ConnMat(this.RegionID(frtr(1)),2*ii) & this.Path(:,2)==this.ConnMat(this.RegionID(frtr(1)),2*ii+1));
+                        RegID = [RegID,this.Path(temp,6)];
+                        frtr_tmp = [frtr_tmp,this.Path(temp,6)];
+                    end
+                    temp = find(this.Path(:,5)==1 & this.Path(:,6)==frtr(1));
+                    while this.Path(temp,6)==frtr(1)
+                        temp = this.Path(temp,3);
+                    end
+                    frtr(1) = [];
+                    frtr = [frtr,this.Path(temp,6),unique(frtr_tmp)];
+                    RegID = unique([RegID,this.Path(temp,6)]);
+
+                end
+
+                RegID = unique(RegID);
+                RegPts = [];
+                for ii = 1:length(RegID)
+                    temp = this.freespace(:,3)==RegID(ii);                    % Find all waypoints in the local region    
+
+                    RegPts = [RegPts;this.freespace(temp,:)];                        % Extract the waypoints information in the first region 
+
+                end
+               % Distribute 100 robots to this region
+
+                this.loc(:,1:2) = RegPts( randi(length(RegPts),this.NumRob,1),1:2); 
+            end
 
             
        end
