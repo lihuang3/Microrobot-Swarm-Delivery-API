@@ -1,8 +1,9 @@
 % mazeData = int16(obj.BW);
-filename = 'map1203.txt';
+filename = 'map1218.txt';
 mazeData = load(filename);
 costMap = mazeData;
-goal = [137, 47];% [393, 137];
+goal = [140, 66]; 
+%[137, 47];% [393, 137];
 BSF_Frontier = goal;
 cost = 100;
 costMap(goal(1),goal(2)) = cost;
