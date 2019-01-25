@@ -32,7 +32,7 @@ alg = 2;   % 1 for Benchmark heuristics
 bolus_region = 0; %          
           
 % Functions
-funct = 2;
+funct = 1;
 %1: map processing only
 %2: Global control
 %3: Map evaluation (under construction)
@@ -40,26 +40,26 @@ funct = 2;
 
 
 % Specify vascular network maps
-mapname = {'figT','figStdMap','figVB','maze1','maze2','maze3'};
+mapname = {'figT','figStdMap','figVB','maze1','maze2','maze3', 'figVein'};
 
 % Specify map scaling
-scale = {[40 70],[40 70],[60 70],[40 70],[40 70],[40,70]};
+scale = {[40 70],[40 70],[60 70],[40 70],[40 70],[40,70],[40, 70]};
 
 % Goal locations for each map
-goalloc = {[280,327],[354,356],[260,122],[373,155],[307 567],[351,180]};% 
+goalloc = {[280,327],[354,356],[260,122],[373,155],[307 567],[351,180], [250, 122]};% 
 
 % Set distance threshold to distinguish end points from branch points and
 % the range of branch point (within this range there is only 1 branch point)
-dist_threshold = {[35 35],[35 35], [15 15],[25 20],[15 10],[15,10]};
+dist_threshold = {[35 35],[35 35], [15 15],[25 20],[15 10],[15,10], [15,10]};
 
 % Def. channel width
-channel_width = {50, 30,12.5,15,20,20};
+channel_width = {50, 30,12.5,15,20,20, 20};
 
 
 % Def. variable "maps" with properties
-maps = cell(6,1);
+maps = cell(7,1);
 
-for ii = 1:6
+for ii = 1:7
     maps{ii} = struct('funct',funct,'Process_Display',proc_disp,'Algorithm',alg,...
         'Animation',animation_switch,'name', mapname(ii), 'goal_loc', goalloc(ii), ...
         'distance_threshold', dist_threshold(ii),'scale', ...
