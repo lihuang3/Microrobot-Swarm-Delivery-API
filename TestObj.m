@@ -888,7 +888,7 @@ classdef TestObj < handle
                 hGoal.CData = [1 0 0];
                 
                 % Plot robots
-                hRobot = scatter(this.loc(:,2),this.loc(:,1),5,'filled');
+                hRobot = scatter(this.loc(:,2),this.loc(:,1),15,'filled');
                 hRobot.CData = [0 0 0];
                 
                 hRobot_Target = scatter(this.loc(1,2),this.loc(1,1),40,'MarkerEdgeColor',[1 0 0],...

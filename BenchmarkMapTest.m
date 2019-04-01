@@ -12,7 +12,7 @@ clc
 % rng(18)
 
 % Def number of robots
-NumRob = 128; 
+NumRob = 256; 
 
 % Animation ON/OFF switch
 animation_switch = 1;
@@ -32,7 +32,7 @@ alg = 2;   % 1 for Benchmark heuristics
 bolus_region = 0; %          
           
 % Functions
-funct = 1;
+funct =2;
 %1: map processing only
 %2: Global control
 %3: Map evaluation (under construction)
@@ -46,8 +46,8 @@ mapname = {'figT','figStdMap','figVB','maze1','maze2','maze3', 'figVein'};
 scale = {[40 70],[40 70],[60 70],[40 70],[40 70],[40,70],[40, 70]};
 
 % Goal locations for each map
-goalloc = {[280,327],[354,356],[260,122],[373,155],[307 567],[351,180], [250, 122]};% 
-
+goalloc = {[242, 273],[157, 214],[260,122],[373,155],[307 567],[351,180], [250, 122]};% 
+% [354,356]
 % Set distance threshold to distinguish end points from branch points and
 % the range of branch point (within this range there is only 1 branch point)
 dist_threshold = {[35 35],[35 35], [15 15],[25 20],[15 10],[15,10], [15,10]};
