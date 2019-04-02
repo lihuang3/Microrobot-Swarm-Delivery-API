@@ -1,4 +1,4 @@
-mode = 0; % 0 for restart, 1 for continue
+mode = 1; % 0 for restart, 1 for continue
 
 %%%
 %  load('20170909_6R_StdMap.mat')
@@ -18,22 +18,27 @@ learnRate = 0.6;
 
 epsilon = 0.5;
 
-epsilonDecay = 1;%0.99;
+if mode == 2
+    epsilonDecay = 1;
+else
+    epsilonDecay = 0.99;
+end
+% epsilonDecay = 0.99; % 1
 
-discount = 0.8;
+discount = 0.7;
 
 successRate = 1;
 
 winBonus = 100;
 
-maxIter =50000;
+maxIter =10000000;
 
 maxStep = 300;
 
 
 if mode == 0
     
-    NumRob = 3;
+    NumRob = 6;
     run('forlooptest.m')
     
 
@@ -46,8 +51,10 @@ if mode == 0
 end
 %???Vorig = reshape(max(Q,[],2),[7,7,7]);
 
-%      RobLoc = FreeSpace(randi(length(FreeSpace),NumRob,1));
-     RobLoc = [20; 14; 17; 113; 110; 116];
+%      RobLoc_init = FreeSpace(randi(length(FreeSpace),NumRob,1));
+    RobLoc_init = [29; 14; 77; 58; 110; 92];
+%     RobLoc_init = [14, 41, 92];
+    RobLoc = RobLoc_init;
     
     LocCol = floor(RobLoc./size(Map,1))+1;
     LocRow = mod(RobLoc,size(Map,1));
@@ -80,7 +87,7 @@ for iIter = 1:maxIter
     
 
 %     RobLoc = FreeSpace(randi(length(FreeSpace),NumRob,1));
-     RobLoc = [20; 14; 17; 113; 110; 116];
+     RobLoc = RobLoc_init;
     % Trained
     % [68; 14; 53; 87; 110; 58];
     % [59; 14; 17; 110; 90; 116];
@@ -112,7 +119,7 @@ for iIter = 1:maxIter
         snewIdx = snewIdx0 + LwBd-1;
     
     if process_display ==1
-        figure(2)
+%         figure(2)
         fp3 = plot(0,R(snewIdx),'-k','LineWidth',2);
     end
    

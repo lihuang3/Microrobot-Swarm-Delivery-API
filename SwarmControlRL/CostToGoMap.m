@@ -7,8 +7,9 @@ ValueMap = Map;                              % 'ValueMap' is a cost-to-go value 
 
 NodeCnt = 1;                                        % Waypoint counter (i.e. node counter) 
 
-goal = [68,14];
+% goal = [68,14];
 % goal = [11,10];
+goal =[5, 8];
 
 ValueMap(goal(1),goal(2))=100;                         % Def the minimum cost to goal
                                                     % Note this is not zero because in "ValueMap", 
