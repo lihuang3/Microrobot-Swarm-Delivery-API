@@ -10,18 +10,18 @@ cnt = 0;
 
 pause_timer1 = 0.4;
 pause_timer2 = 0.4;
-process_display =0;
+process_display =1;
 
 
 learnRate = 0.6;
 
 
-epsilon = 0.5;
-
 if mode == 2
+    epsilon = 0.0;
     epsilonDecay = 1;
 else
-    epsilonDecay = 0.99;
+    epsilon = 0.5;
+    epsilonDecay = 0.999;
 end
 % epsilonDecay = 0.99; % 1
 
