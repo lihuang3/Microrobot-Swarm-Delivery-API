@@ -204,11 +204,11 @@ for iIter = 1:maxIter
   
     end
     
-   if mod(iIter, 400) == 1
+   if mode(iIter, 400) == 1
       epsilon = epsilon*epsilonDecay;
    end
    
-   if mod(iIter,50000) == 0
+   if mode(iIter,50000) == 0
        filename = sprintf('file%d', iIter);
        save(filename)
    end
@@ -223,8 +223,7 @@ for iIter = 1:maxIter
    if mod(iIter,400)==1
        disp('Iteration =')
        disp(iIter)
-       disp('steps = ')
-       disp(iStep)
+       disp('')
    end
    
 end
