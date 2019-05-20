@@ -1,0 +1,2 @@
+gcf=getframe();
+imwrite(gcf.cdata, 'test.png','-r100')
