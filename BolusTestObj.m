@@ -1525,6 +1525,7 @@ classdef BolusTestObj < handle
                         hRobot_Target.YData = this.loc(Robot_Target,1);
                         pause(0.00001);
                     end
+                    
                     % For each robot location, associate it with the nearest medial-axis waypoint                     
                     Idx0 = knnsearch(this.Path(:,1:2),this.loc);
 
@@ -2681,6 +2682,9 @@ classdef BolusTestObj < handle
                                 hRobot.YData = this.loc(:,1);
                                 hRobot_Target.XData = this.loc(Robot_Target,2);
                                 hRobot_Target.YData = this.loc(Robot_Target,1);
+                                                        thisframe=getframe(gcf);
+                        [X,Map]=frame2im(thisframe);
+                        a=imwrite(X,'Figura 1.jpg')
                                 pause(0.00001);
                             end
                             % For each robot location, associate it with the nearest medial-axis waypoint                     

@@ -12,10 +12,14 @@ clc
 % rng(18)
 
 % Def number of robots
-NumRob = 256; 
+NumRob = 1024; 
 
 % Animation ON/OFF switch
 animation_switch = 1;
+cost_visual = 1;
+logcost = 0;
+% save frame
+save_frame = 0;
 
 % Process Display ON/OFF
 proc_disp = 0;
@@ -32,7 +36,7 @@ alg = 2;   % 1 for Benchmark heuristics
 bolus_region = 0; %          
           
 % Functions
-funct =2;
+funct =4;
 %1: map processing only
 %2: Global control
 %3: Map evaluation (under construction)
@@ -42,15 +46,18 @@ funct =2;
 % Specify vascular network maps
 mapname = {'figT','figStdMap','figVB','maze1','maze2','maze3', 'figVein'};
 
+% target range
+target_range = {15,15,15,15,15,15,15};
 % Specify map scaling
 scale = {[40 70],[40 70],[60 70],[40 70],[40 70],[40,70],[40, 70]};
 
 % Goal locations for each map
-goalloc = {[242, 273],[157, 214],[260,122],[373,155],[307 567],[351,180], [250, 122]};% 
-% [354,356]
+goalloc = {[242, 273], [354,356],[260,122],[372,164],[307 567],[351,180], [160, 511]};% 
+% STD [157, 214], [354,356]
+% map1203 [211, 295], [372,164]
 % Set distance threshold to distinguish end points from branch points and
 % the range of branch point (within this range there is only 1 branch point)
-dist_threshold = {[35 35],[35 35], [15 15],[25 20],[15 10],[15,10], [15,10]};
+dist_threshold = {[35 35],[35 35], [15 15],[30 15],[15 10],[15,10], [35,35]};
 
 % Def. channel width
 channel_width = {50, 30,12.5,15,20,20, 20};
@@ -61,8 +68,9 @@ maps = cell(7,1);
 
 for ii = 1:7
     maps{ii} = struct('funct',funct,'Process_Display',proc_disp,'Algorithm',alg,...
-        'Animation',animation_switch,'name', mapname(ii), 'goal_loc', goalloc(ii), ...
-        'distance_threshold', dist_threshold(ii),'scale', ...
+        'Animation',animation_switch, 'cost_visual',cost_visual,'save_frame',save_frame, ...
+        'logcost', logcost, 'name', mapname(ii), 'goal_loc', goalloc(ii), ...
+        'distance_threshold', dist_threshold(ii), 'target_range', target_range(ii), 'scale',...
         scale(ii),'channel_width',channel_width(ii),'NumRob',NumRob,'bolus_region',bolus_region);
 end
 

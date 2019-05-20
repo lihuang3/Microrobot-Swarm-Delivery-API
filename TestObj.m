@@ -62,6 +62,17 @@ classdef TestObj < handle
       row0
       col0
       rank0
+      outfig
+      ratio
+      save_frame
+      frame_buf
+      target_range
+      cost_visual
+      num_steps
+      logcost
+      fileID
+      maxcost_hist
+      avgcost_hist
    end
     
    methods
@@ -72,33 +83,43 @@ classdef TestObj < handle
            tic
           
            testmap = strcat(map.name,'.fig');
-           open(testmap);
+           gcf = open(testmap);
            this.fig = getframe;
+           [h,w,d]=size(this.fig.cdata);
+           nw = 1000;
+           set(gcf, 'Position', [100,100, nw, h/w*nw]); 
+           this.outfig = getframe;
+           [h2,w2,d2]=size(this.outfig.cdata);           
+           this.ratio = w2/w;
 
-           
            %% Initialize map parameters
            this.channel_width = map.channel_width;              % Def channel width
            bw = imbinarize(this.fig.cdata(:,:,1),0.8);          % RGB --> binary image
            this.BW = bw;                                       % Resize the image for smooth path
            this.scale = map.scale;
            this.goal = map.goal_loc;                            % Goal location
+           this.target_range = map.target_range;
            this.animation = map.Animation;                      % Animation ON/OFF
-           this.alg = map.Algorithm;                            % Choose algorithm
+           this.cost_visual = map.cost_visual;
+           this.logcost = map.logcost;
+           this.save_frame = map.save_frame;
+           this.alg = map.Algorithm;                            % Choose algorithm           
            this.NumRob = map.NumRob;                            % Number of robots
            this.Process_Display = map.Process_Display;          % Process display ON/OFF
            this.funct = map.funct;
            this.bolus_region = map.bolus_region;                % Number of initial distribution regions
-           if this.Process_Display ==0
+
+           if this.Process_Display == 0
                 close (figure(1))  
            end
            %% Extend the boundaries of the binary image
 %            [l10,l20] = size(this.BW);
-%            l1 = uint16(l10*1.2);
-%            l2 = uint16(l20*1.2);           
+%            l1 = uint16(l10*1.1);
+%            l2 = uint16(l20*1.1);           
 %            BW0 = uint16(zeros(l1,l2));
 %            BW0(uint16((l1-l10)/2):uint16((l1-l10)/2)-1+l10,uint16((l2-l20)/2):l20-1+uint16((l2-l20)/2))=this.BW;
 %            this.BW = logical(BW0);
-%            
+           
             this.BW(end,:) = 0;
             this.BW(:,end) = 0;
             this.BW(1,:) = 0;
@@ -141,7 +162,14 @@ classdef TestObj < handle
            disp(' ')
            disp('Map Process Time:')
            toc
+           
+           if this.funct == 1
+               return
+           end
            %% Part II: Global Aggregation
+
+
+           this.alg = map.Algorithm;    
            switch(this.funct)
                case 1
                     disp('Map processing mode...')
@@ -156,23 +184,9 @@ classdef TestObj < handle
                     disp('Human control mode...')
                     HumanControl(this);
            end
-          disp('Completed!')
+           disp('Completed!')
+          
 
-
-% %            EdPts0tmp = this.EdPts0;
-% %            for jj = 1:length(EdPts0tmp)
-% %                this.col0 = jj;
-% %                this.goal = EdPts0tmp(jj,1:2);
-% %                MapProcess1(this);
-% %                MapProcess2(this);
-% %                MapProcess3(this);
-% %                MapProcess4(this);
-% %                GlobalSetup(this);
-% %                for kk = 1:10
-% %                     this.row0 = kk+2; 
-% %                     GlobalControl(this);
-% %                end
-% %            end
 
        end
        
@@ -498,7 +512,7 @@ classdef TestObj < handle
             
                 if ~isempty(this.psdEdPts)
                     f3 = scatter(this.psdEdPts(:,2),this.psdEdPts(:,1),5,'filled');
-                    f3.CData = [0,0,0.8];
+                    f3.CData = [1,1,0];
                 end
             end
 
@@ -825,7 +839,7 @@ classdef TestObj < handle
        function RobotInit(this)
             % Distribute robots in freespace
             this.loc = zeros(this.NumRob,2);
-                      
+            this.num_steps = 0;
             %% Uniformly Distribution
             if this.bolus_region==0
                 this.loc(:,1:2) = this.freespace(randi((length(this.freespace)),this.NumRob,1),1:2);
@@ -870,67 +884,104 @@ classdef TestObj < handle
        end
        
        function GlobalControl(this)
+           % For each robot location, associate it with the nearest medial-axis waypoint                     
+            Idx0 = knnsearch(this.Path(:,1:2),this.loc);
+
+            % Update the total cost
+            totalcost = sum(this.Path(Idx0,4)-100.0)./this.NumRob;
+            maxcost = max(this.Path(Idx0,4))-100;
+            nstep = 1;              % # of total control steps        
+                
+            this.avgcost_hist = [totalcost];
+            this.maxcost_hist = [maxcost];
+            
            %==============================================================%
            % Enable Animation           
            %==============================================================%
-            if this.animation ==1
-                % close all
-                panel = figure;
-                RGB = double(cat(3, ~this.BW, ~this.BW, ~this.BW));
-                RGB(:,:,1) = RGB(:,:,1).*182./255+ double(this.BW);
-                RGB(:,:,2) = RGB(:,:,2).*228./255+ double(this.BW);
-                RGB(:,:,3) = RGB(:,:,3).*255./255+ double(this.BW);
-                imshow(RGB)
-                hold on
+            if this.animation == 1
+                figure(1); hold on
 
+%                 bw = imbinarize(this.outfig.cdata(:,:,1),0.8); 
+%                 RGB = double(cat(3, ~bw, ~bw, ~bw));
+%                 RGB(:,:,1) = RGB(:,:,1).*182./255+ double(bw);
+%                 RGB(:,:,2) = RGB(:,:,2).*228./255+ double(bw);
+%                 RGB(:,:,3) = RGB(:,:,3).*255./255+ double(bw);                
+%                 imshow(RGB)
+
+                imshow(this.outfig.cdata);
                 % Mark goal location
-                hGoal = scatter(this.goal(2),this.goal(1),80,'filled','p');
+    %                 hGoal = scatter(this.ratio*this.goal(2),this.ratio*this.goal(1),80,'filled','p');                
+                hGoal = scatter(this.ratio*this.goal(2),this.ratio*this.goal(1),1000,'MarkerEdgeColor',[1 0 0],'LineWidth',2);
                 hGoal.CData = [1 0 0];
-                
-                % Plot robots
-                hRobot = scatter(this.loc(:,2),this.loc(:,1),15,'filled');
-                hRobot.CData = [0 0 0];
-                
-                hRobot_Target = scatter(this.loc(1,2),this.loc(1,1),40,'MarkerEdgeColor',[1 0 0],...
-              'MarkerFaceColor',[0 1 0],'LineWidth',2);
-%                 hRobot_Target.CData = [0 1 0];              
-            end
-            %--------------------------------------------------------------%                          
-           
 
-            totalcost = 1e12;       % Initial total cost
-                            
-            nstep = 0;              % # of total control steps
-        
-            tic
-             
+                % Plot robots
+                hRobot = scatter(this.ratio*this.loc(:,2),this.ratio*this.loc(:,1),15,'filled');
+                hRobot.CData = [0 0 0];
+
+                hRobot_Target = scatter(this.ratio*this.loc(1,2),this.ratio*this.loc(1,1),40,'MarkerEdgeColor',[1 0 0],...
+              'MarkerFaceColor',[0 1 0],'LineWidth',2);
+
+            end
+
+            if this.cost_visual == 1
+                tmp = figure(2);hold on
+                tmp.Position = [20, 50, 800 600];
+                ymax_val = max(totalcost, maxcost+25);
+                max_frame = 5000;
+                axis([0, max_frame, 0, ymax_val]);
+                htotal = plot(1:nstep,totalcost,'-k','LineWidth',3);
+                hmax = plot(1:nstep, maxcost,'-b','LineWidth',3);
+                set(gca, 'FontSize', 16)
+                xlabel('Number of Steps')
+                ylabel('Cost-to-go')    
+                lgd = legend('ave cost', 'max cost', 'Location','southwest');
+                lgd.FontSize = 16;
+            end
+            
+            %--------------------------------------------------------------%                          
+               
+            tic           
             switch this.alg
                 case 1
-                    [nstep, totalcost] = Benchmark_Heuristic_Aggregation(this,nstep,totalcost, hRobot, hRobot_Target);                        
-
+                    if this.animation == 1 && this.cost_visual ==1
+                        [nstep, maxcost] = Benchmark_Heuristic_Aggregation(this,nstep,maxcost, hRobot, hRobot_Target, htotal, hmax);                        
+                    else if this.animation == 1
+                            [nstep, maxcost] = Benchmark_Heuristic_Aggregation(this,nstep,maxcost, hRobot, hRobot_Target);
+                        else
+                           [nstep, maxcost] = Benchmark_Heuristic_Aggregation(this,nstep,maxcost); 
+                        end
+                    end                            
                 case 2
-                    [nstep, totalcost] = Divide_N_Conquer_Aggregation_Std(this,nstep,totalcost, hRobot, hRobot_Target);
-
+                    if this.animation == 1 && this.cost_visual ==1
+                        [nstep, maxcost] = Divide_N_Conquer_Aggregation_Std(this,nstep,maxcost, hRobot, hRobot_Target, htotal, hmax);                        
+                    else if this.animation == 1
+                            [nstep, maxcost] = Divide_N_Conquer_Aggregation_Std(this,nstep,maxcost, hRobot, hRobot_Target);
+                        else
+                           [nstep, maxcost] = Divide_N_Conquer_Aggregation_Std(this,nstep,maxcost); 
+                        end
+                    end
                 case 3      
-
                     [nstep, totalcost] = Divide_N_Conquer_Aggregation_V2(this,nstep,totalcost, hRobot, hRobot_Target);
-
                 case 4
-
                     [nstep, totalcost] = Divide_N_Conquer_Aggregation_V1(this,nstep,totalcost, hRobot, hRobot_Target);
-                case 5
-                    
+                case 5                   
                     [nstep, RegionDist] = Divide_N_Conquer_Aggregation_V21(this,nstep,totalcost, hRobot, hRobot_Target);
-                case 6
-                    
+                case 6                    
                     [nstep, RegionDist] = Divide_N_Conquer_Aggregation_V11(this,nstep,totalcost, hRobot, hRobot_Target);
                                     
             end
             disp(' ')
-            toc
+            toc                        
+            this.num_steps = nstep;
             disp(' ')
             disp(datetime('now'))
             fprintf('Total control steps = %d\n',nstep);
+            if this.logcost
+                logfile = fopen('data/costplot.txt','w');                
+                fprintf(logfile,'%.1f  \n',this.avgcost_hist);
+                fprintf(logfile,'%.1f  \n',this.maxcost_hist);                
+            end
+            
             try 
                 temp = RegionDist(:,1)/this.NumRob>8/100;
                 fprintf('Aggregation rate = %f',100*sum(RegionDist(temp,1))/this.NumRob);
@@ -1242,50 +1293,92 @@ classdef TestObj < handle
             [axes, buttons, povs] = read(joy);
             
             
-            cd('C:\Users\lhuang28\Documents\GitHub\MagneticController\lihuang\GlobalAgg\New folder')
+%             cd('C:\Users\lhuang28\Documents\GitHub\MagneticController\lihuang\GlobalAgg\New folder')
             % Distribute robots in freespace
             this.loc = zeros(this.NumRob,2);
             this.loc(:,1:2) = this.freespace(randi((length(this.freespace)),this.NumRob,1),1:2);
          
-            panel = figure;
-            RGB = double(cat(3, ~this.BW, ~this.BW, ~this.BW));
-            RGB(:,:,1) = RGB(:,:,1).*182./255+ double(this.BW);
-            RGB(:,:,2) = RGB(:,:,2).*228./255+ double(this.BW);
-            RGB(:,:,3) = RGB(:,:,3).*255./255+ double(this.BW);
-            imshow(RGB)
-            hold on
-                         
-            % Mark goal location
-            hGoal = scatter(this.goal(2),this.goal(1),20,'filled');
-            hGoal.CData = [1 0 0];
+%             panel = figure;
+%             RGB = double(cat(3, ~this.BW, ~this.BW, ~this.BW));
+%             RGB(:,:,1) = RGB(:,:,1).*182./255+ double(this.BW);
+%             RGB(:,:,2) = RGB(:,:,2).*228./255+ double(this.BW);
+%             RGB(:,:,3) = RGB(:,:,3).*255./255+ double(this.BW);
+%             imshow(RGB)
+%             hold on
+%                          
+%             Mark goal location
+%             hGoal = scatter(this.goal(2),this.goal(1),100,'p','filled');
+%             hGoal.CData = [1 0 0];
+% 
+%             Plot robots
+%             hRobot = scatter(this.loc(:,2),this.loc(:,1),25,'filled');
+%             hRobot.CData = [0 0 0];
+%             
+%             nstep = 1;
+%             frame_num = 1;
+%             
+%             For each robot location, associate it with the nearest medial-axis waypoint                     
+%             Idx0 = knnsearch(this.Path(:,1:2),this.loc);
+% 
+%             Update the total cost
+%             totalcost = sum(this.Path(Idx0,4))./this.NumRob-100;
+%             maxcost = max(this.Path(Idx0,4))-100;
+%             figure(2);hold on
+%             fp2 = plot(1:frame_num,totalcost,'-k','LineWidth',2);
+%             fp22 = plot(1:frame_num,maxcost,'-b','LineWidth',2);
+%             tmp = figure(2);
+%             tmp.Position = [100, 200, 400 300]; 
+%             axis([0 400 0 400]);
+%            
+%             xlabel('Number of Steps')
+%             ylabel('Average Cost to the Goal')
+%            
 
-            % Plot robots
-            hRobot = scatter(this.loc(:,2),this.loc(:,1),5,'filled');
-            hRobot.CData = [0 0 0];
-            
-            nstep = 1;
-            frame_num = 1;
-            
-            % For each robot location, associate it with the nearest medial-axis waypoint                     
+           % For each robot location, associate it with the nearest medial-axis waypoint                     
             Idx0 = knnsearch(this.Path(:,1:2),this.loc);
 
             % Update the total cost
-            totalcost = sum(this.Path(Idx0,4))./this.NumRob-100;
+            totalcost = sum(this.Path(Idx0,4)-100.0)./this.NumRob;
+            maxcost = max(this.Path(Idx0,4))-100;
+            nstep = 1;              % # of total control steps     
             
-            figure(2)
-            fp2 = plot(1:frame_num,totalcost,'-k','LineWidth',2);
-            tmp = figure(2);
-            tmp.Position = [-800, 100, 400 300]; 
-            axis([0 400 0 400]);
-           
-            xlabel('5x Number of Steps')
-            ylabel('Average Cost to the Goal')
-           
-            while buttons(2) ==0
+            figure(1); 
+            imshow(this.outfig.cdata); hold on
+            % Mark goal location
+%                 hGoal = scatter(this.ratio*this.goal(2),this.ratio*this.goal(1),80,'filled','p');                
+            hGoal = scatter(this.ratio*this.goal(2),this.ratio*this.goal(1),1200,'MarkerEdgeColor',[1 0 0],'LineWidth',2);
+            hGoal.CData = [1 0 0];
+
+            % Plot robots
+            hRobot = scatter(this.ratio*this.loc(:,2),this.ratio*this.loc(:,1),15,'filled');
+            hRobot.CData = [0 0 0];
+
+
+        if this.cost_visual == 1
+            tmp = figure(2);hold on
+            tmp.Position = [20, 50, 600 400];
+            ymax_val = max(totalcost, maxcost+25);
+            max_frame = 3500;
+            axis([0, max_frame, 0, ymax_val]);
+            htotal = plot(1:nstep,totalcost,'-k','LineWidth',3);
+            hmax = plot(1:nstep, maxcost,'-b','LineWidth',3);
+            set(gca, 'FontSize', 16)
+            xlabel('Number of Steps')
+            ylabel('Cost-to-go')    
+            lgd = legend('ave cost', 'max cost', 'Location','southwest');
+            lgd.FontSize = 16;
+        end
+            
+            
+
+
+              while buttons(2) ==0 && maxcost>10
+                pause(0.01);
                 [axes, buttons, povs] = read(joy);
                 axisY = -axes(2);
                 axisX = -axes(1);
-                if abs(axisY)>0.2 || abs(axisX)>0.2
+
+                if abs(axisY)>0.45 || abs(axisX)>0.35
                     angle = round((atan2(axisX,axisY)+pi)/(pi/4));
                     ds = round([cos(angle*pi/4),sin(angle*pi/4)]);
 
@@ -1302,46 +1395,52 @@ classdef TestObj < handle
                     % Make sure all robots stop at the obstacle boundaries                    
                     this.loc(collision_idx,:) = prev(collision_idx,:);
 
-
-                    % Update robot location plot
-                    hRobot.XData = this.loc(:,2);
-                    hRobot.YData = this.loc(:,1);
-                    pause(0.00001);
-
                     % For each robot location, associate it with the nearest medial-axis waypoint                     
                     Idx0 = knnsearch(this.Path(:,1:2),this.loc);
-
                     % Update the total cost
-                    totalcost = sum(this.Path(Idx0,4))./this.NumRob-100;
+                    totalcost = sum(this.Path(Idx0,4)-100)./this.NumRob;
+                    maxcost = max(this.Path(Idx0,4))-100;                                                                                           
                     
+                    % Update robot location plot                       
+                    hRobot.XData = this.ratio*this.loc(:,2);
+                    hRobot.YData = this.ratio*this.loc(:,1);
+                                                
+                    set(htotal,'YData',[htotal.YData,totalcost]);
+                    set(htotal,'XData',[htotal.XData,nstep]);
+                    set(hmax,'YData',[hmax.YData,maxcost]);
+                    set(hmax,'XData',[hmax.XData,nstep]);
+                                                                                                                                           
+                    pause(0.00001);
+                   
                     % Update control step
                     nstep = nstep + 1;
+
                 end
                 
-                if mod(frame_num,5)==0 
-                
-                    figure(1)
-
-                    thisframe = getframe;
-                    thisfile = sprintf('Agg%04d.tif',frame_num/5);
-                    imwrite(thisframe.cdata,thisfile);
-
-                    figure(2)
-
-                    set(fp2,'YData',[fp2.YData,totalcost]);
-                    set(fp2,'XData',[fp2.XData,frame_num/5]);
-                    thisframe = getframe;
-                    thisfile = sprintf('Cost%04d.tif',frame_num/5);
-                    imwrite(thisframe.cdata,thisfile);
-                end
-                frame_num = frame_num+1;
             end
            
+            str = sprintf('Total steps = %d', nstep);
+            disp(str)
+            
        end
        
        %% Aggregation Algorithms
-       function [nstep, totalcost] = Benchmark_Heuristic_Aggregation(this,nstep,totalcost, hRobot, hRobot_Target)
-           while totalcost > this.NumRob*(100+1/3*this.channel_width)
+       function [nstep, maxcost] = Benchmark_Heuristic_Aggregation(this, nstep, maxcost, hRobot, hRobot_Target, htotal, hmax)
+            if nargin < 7
+                switch nargin
+                    case 5
+                        htotal = 0;
+                        hmax = 0;
+                    case 3
+                        hRobot = 0; 
+                        hRobot_Target = 0;
+                        htotal = 0;
+                        hmax = 0;
+                end
+            end
+            
+           %while totalcost > this.NumRob*(this.target_range+1/3*this.channel_width)
+            while maxcost > this.target_range 
                 % For each robot location, associate it with the nearest medial-axis waypoint 
                 Idx0 = knnsearch(this.Path(:,1:2),this.loc);
 
@@ -1384,23 +1483,55 @@ classdef TestObj < handle
                     % Update the target robot location
                     p1 = this.loc(Robot_Target,1:2);
 
-                    if this.animation ==1
-                        % Update robot location plot
-                        hRobot.XData = this.loc(:,2);
-                        hRobot.YData = this.loc(:,1);
-                        hRobot_Target.XData = this.loc(Robot_Target,2);
-                        hRobot_Target.YData = this.loc(Robot_Target,1);
-                        pause(0.00001);
-
-                    end
                     % For each robot location, associate it with the nearest medial-axis waypoint                     
                     Idx0 = knnsearch(this.Path(:,1:2),this.loc);
 
                     % Update the total cost
-                    totalcost = sum(this.Path(Idx0,4));
-
+                    maxcost = max(this.Path(Idx0,4))-100;
+                    totalcost = sum(this.Path(Idx0,4)-100.0)./this.NumRob;
+                    if this.logcost
+                        this.avgcost_hist = [this.avgcost_hist, totalcost];
+                        this.maxcost_hist = [this.maxcost_hist, maxcost];
+                    end
+                     
                     % Update control step
                     nstep = nstep + 1;
+                    if nstep > 6000
+                        msg = 'nsteps > 6000';
+                        error(msg);
+                    end
+                    if this.animation ==1
+                        % Update robot location plot                       
+                        hRobot.XData = this.ratio*this.loc(:,2);
+                        hRobot.YData = this.ratio*this.loc(:,1);
+                        hRobot_Target.XData = this.ratio*this.loc(Robot_Target,2);
+                        hRobot_Target.YData = this.ratio*this.loc(Robot_Target,1);
+                                                
+                        if this.save_frame
+                            if this.cost_visual == 1
+                                figure(1);
+                            end
+                            figname = sprintf('tmp/f_%05d.png',nstep);
+                            imwrite(frame2im(getframe), figname);
+                        end                                                
+                        pause(0.00001);                       
+                    end
+                    if this.cost_visual == 1
+                        set(htotal,'YData',[htotal.YData,totalcost]);
+                        set(htotal,'XData',[htotal.XData,nstep]);
+                        set(hmax,'YData',[hmax.YData,maxcost]);
+                        set(hmax,'XData',[hmax.XData,nstep]);
+                        pause(0.00001);                       
+                        
+                        if this.save_frame
+                            if this.animation == 1
+                                figure(2);
+                            end
+                            figname = sprintf('tmp2/f_%05d.png',nstep);                            
+                            imwrite(frame2im(getframe), figname);
+                        end   
+                    end
+
 
                     % Update intermediate target location
                     p2 = this.Path(p2_Parent_ID,1:2);
@@ -1409,8 +1540,22 @@ classdef TestObj < handle
            end
        end
        
-       function [nstep, totalcost] = Divide_N_Conquer_Aggregation_Std(this,nstep,totalcost, hRobot, hRobot_Target)
-            while totalcost > this.NumRob*(100+1/3*this.channel_width)
+       function [nstep, maxcost] = Divide_N_Conquer_Aggregation_Std(this,nstep,maxcost, hRobot, hRobot_Target, htotal, hmax)
+           if nargin < 7
+                switch nargin
+                    case 5
+                        htotal = 0;
+                        hmax = 0;
+                    case 3
+                        hRobot = 0; 
+                        hRobot_Target = 0;
+                        htotal = 0;
+                        hmax = 0;
+                end
+            end
+%             while totalcost > this.NumRob*(this.target_range+1/3*this.channel_width)
+            while maxcost > this.target_range
+
                % For each robot location, associate it with the nearest medial-axis waypoint 
                 Idx0 = knnsearch(this.Path(:,1:2),this.loc);
 
@@ -1452,7 +1597,8 @@ classdef TestObj < handle
 
                 if iRegionTarget == length(this.RegionID)
                     this.alg = 1;
-                    [nstep, totalcost] = Benchmark_Heuristic_Aggregation(this,nstep,totalcost);
+                    maxcost = max(this.Path(Idx0,4))-100;
+                    [nstep, maxcost] = Benchmark_Heuristic_Aggregation(this,nstep,maxcost, hRobot, hRobot_Target, htotal, hmax);
                     break;
                 end
 
@@ -1498,7 +1644,8 @@ classdef TestObj < handle
                         ds(2).*ones(this.NumRob,1)];
 
                     % Collision check
-                    collision_idx = diag(this.BW(this.loc(:,1),this.loc(:,2)))==0;
+                    tmp = this.BW(this.loc(:,1),this.loc(:,2));
+                    collision_idx = diag(tmp)==0;
 
                     % Make sure all robots stop at the obstacle boundaries                    
                     this.loc(collision_idx,:) = prev(collision_idx,:);
@@ -1506,22 +1653,56 @@ classdef TestObj < handle
                     % Update the target robot location
                     p1 = this.loc(Robot_Target,1:2);
 
-                    if this.animation ==1
-                        % Update robot location plot
-                        hRobot.XData = this.loc(:,2);
-                        hRobot.YData = this.loc(:,1);
-                        hRobot_Target.XData = this.loc(Robot_Target,2);
-                        hRobot_Target.YData = this.loc(Robot_Target,1);
-                        pause(0.00001);
-                    end
-                    % For each robot location, associate it with the nearest medial-axis waypoint                     
+                    % For each robot location, associate it with the nearest medial-axis waypoint
                     Idx0 = knnsearch(this.Path(:,1:2),this.loc);
 
                     % Update the total cost
-                    totalcost = sum(this.Path(Idx0,4));
-
+                    maxcost = max(this.Path(Idx0,4))-100;
+                    totalcost = sum(this.Path(Idx0,4)-100.0)./this.NumRob;
+                    if this.logcost
+                        this.avgcost_hist = [this.avgcost_hist, totalcost];
+                        this.maxcost_hist = [this.maxcost_hist, maxcost];
+                    end
                     % Update control step
                     nstep = nstep + 1;
+                    if nstep > 6000
+                        msg = 'nsteps > 6000';
+                        error(msg);
+                    end
+                    if this.animation ==1                       
+                        % Update robot location plot
+                        hRobot.XData = this.ratio*this.loc(:,2);
+                        hRobot.YData = this.ratio*this.loc(:,1);
+                        hRobot_Target.XData = this.ratio*this.loc(Robot_Target,2);
+                        hRobot_Target.YData = this.ratio*this.loc(Robot_Target,1);       
+                        if this.save_frame == 1
+                            if this.cost_visual == 1
+                                figure(1);
+                            end
+                            figname = sprintf('tmp/f_%05d.png',nstep);
+                            imwrite(frame2im(getframe), figname);
+                        end
+                        pause(0.00001);
+                    end
+                    
+                    
+                    if this.cost_visual == 1
+                        set(htotal,'YData',[htotal.YData,totalcost]);
+                        set(htotal,'XData',[htotal.XData,nstep]);
+                        set(hmax,'YData',[hmax.YData,maxcost]);
+                        set(hmax,'XData',[hmax.XData,nstep]);
+                        pause(0.00001);                       
+                        
+                        if this.save_frame
+                            if this.animation == 1
+                                figure(2);
+                            end
+                            figname = sprintf('tmp2/f_%05d.png',nstep);                            
+                            imwrite(frame2im(getframe), figname);
+                        end   
+                    end
+                    
+
 
                     % Update intermediate target location
                     p2 = this.Path(p2_Parent_ID,1:2);
